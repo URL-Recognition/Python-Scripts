@@ -1,0 +1,59 @@
+import cv2
+from PIL import Image
+import pytesseract
+import os
+import string
+#pytesseract.tesseract_cmd = '/Library/Frameworks/Python.framework/Versions/3.6/lib/python3.6/site-packages/pytesseract'
+
+
+def OCR(f):
+    # read commandline arguments and store them in args
+    # ap = argparse.ArgumentParser()
+    # ap.add_argument("-i", "--image", required=True,
+    #               help="path to input image to be preprocessed")
+    # args = vars(ap.parse_args())
+
+    # read in image
+    # image = cv2.imread(args["image"])
+
+    image = cv2.imread(f)
+    # make image grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    # resize image to be of 2x original size
+    x, y = image.shape[:2]
+    gray = cv2.resize(gray, (y * 2, 2 * x))
+
+    # apply adaptive threshold and conversion to binary image
+    prep2 = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11,
+                                  12)  # this works best with blur
+
+    # save result above to file
+    cv2.imwrite("adapthresh.jpg", prep2)
+
+    # apply median blur to clean pepper noise
+    prep2 = cv2.medianBlur(prep2, 3)
+
+    # save file by process-id.jpg
+    filename2 = "{}.jpg".format('test')
+    cv2.imwrite(filename2, prep2)
+
+    # The rest of the code here should occur after preprocessing
+    text = pytesseract.image_to_string(Image.open(filename2))
+
+
+    text = cleanstring(text)
+
+    # print entirety of read
+    print(text)
+
+    return [x.printable for x in text.split()]
+
+
+def cleanstring(s):
+    dict = [('|', 'l'), ('—', '-')]
+    for i in dict:
+        if i[0] in s:
+            s = s.replace(i[0], i[1])
+    return s
+
